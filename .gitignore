@@ -1,0 +1,54 @@
+# Dependency folders
+node_modules/
+jspm_packages/
+web_modules/
+
+# Local configuration files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*
+
+# Logs and databases
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+reasoning.log
+db.json
+
+# IDEs and editors
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+
+# React Native & Expo specific
+.expo/
+dist/
+web-build/
+nativetemplates/
+ios/build/
+android/build/
+*.apk
+*.aab
+*.ipa
+
+# Developer Scratch scripts
+scratch/
+find_helpers.js
+find_auth.js
+search_time_picker.js
+find_search.js
+
+# Presentation & Non-project files
+Yaqeen_Pitch_Deck.pptx
+run.bat
+

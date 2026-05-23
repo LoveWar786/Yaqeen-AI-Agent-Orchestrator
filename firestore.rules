@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to verify profile completeness for providers
+    function isProfileComplete() {
+      let path = /databases/$(database)/documents/users/$(request.auth.uid);
+      return !exists(path) || 
+             !('role' in get(path).data) ||
+             get(path).data.role != 'provider' || (
+               get(path).data.shopName != null && get(path).data.shopName != '' &&
+               get(path).data.shopAddress != null && get(path).data.shopAddress != '' &&
+               get(path).data.phoneNumber != null && get(path).data.phoneNumber != '' &&
+               get(path).data.city != null && get(path).data.city != '' &&
+               get(path).data.area != null && get(path).data.area != '' &&
+               get(path).data.visitingCharges != null && get(path).data.visitingCharges > 0 &&
+               get(path).data.services != null && get(path).data.services.keys().size() > 0
+             );
+    }
+
+    // User profile configurations
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      // Deadlock prevention: users can update/write their own profile without completeness restriction
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // User addresses subcollection
+    match /users/{userId}/addresses/{addressId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // User notifications subcollection
+    match /users/{userId}/notifications/{notificationId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Booking transaction systems
+    match /bookings/{bookingId} {
+      // Allow read if authenticated
+      allow read: if request.auth != null;
+      
+      // Customers can create bookings (if they have complete profile, though it is provider-focused)
+      allow create: if request.auth != null && isProfileComplete() && request.auth.uid == request.resource.data.userId;
+      
+      // Customers and assigned providers can update bookings (e.g. accepting, completing, cancelling)
+      // Enforced only if profile is complete to prevent incomplete providers from accepting jobs
+      allow update: if request.auth != null && isProfileComplete() && (
+        request.auth.uid == resource.data.userId || 
+        request.auth.uid == resource.data.providerId ||
+        resource.data.status == 'PENDING' ||
+        resource.data.status == 'BROADCASTING' ||
+        resource.data.targetProviderId == request.auth.uid
+      );
+      
+      allow delete: if request.auth != null && isProfileComplete() && (
+        request.auth.uid == resource.data.userId || 
+        request.auth.uid == resource.data.providerId
+      );
+      
+      // Message rooms inside booking documents
+      match /messages/{messageId} {
+        allow read, write: if request.auth != null && isProfileComplete();
+      }
+    }
+  }
+}
